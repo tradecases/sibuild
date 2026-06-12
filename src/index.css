@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-slate-200;
+  }
+
+  html {
+    @apply antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans;
+    font-size: 14px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  }
+
+  .btn-sm {
+    @apply text-xs px-3 py-1.5 h-7;
+  }
+
+  .btn-md {
+    @apply text-sm px-4 py-2 h-9;
+  }
+
+  .btn-lg {
+    @apply text-sm px-5 py-2.5 h-10;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 focus-visible:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 focus-visible:ring-slate-400;
+  }
+
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-400;
+  }
+
+  .btn-danger {
+    @apply bg-danger-500 text-white hover:bg-danger-600 active:bg-danger-700 focus-visible:ring-danger-400;
+  }
+
+  .btn-success {
+    @apply bg-success-500 text-white hover:bg-success-600 active:bg-success-700 focus-visible:ring-success-400;
+  }
+
+  .input-base {
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+           disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed
+           transition-colors duration-150;
+  }
+
+  .card {
+    @apply bg-white rounded-xl border border-slate-200 shadow-card;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:border-slate-300 transition-all duration-150;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .table-th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50 first:rounded-tl-lg last:rounded-tr-lg;
+  }
+
+  .table-td {
+    @apply px-4 py-3 text-sm text-slate-700;
+  }
+
+  .table-row {
+    @apply border-b border-slate-100 hover:bg-slate-50/60 transition-colors duration-100;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600
+           hover:bg-slate-100 hover:text-slate-900 transition-all duration-150 cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-primary-50 text-primary-700 font-semibold hover:bg-primary-100 hover:text-primary-800;
+  }
+
+  .page-title {
+    @apply text-xl font-semibold text-slate-900;
+  }
+
+  .section-title {
+    @apply text-base font-semibold text-slate-800;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-slate-600 mb-1.5;
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Print styles for invoices/quotations */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white;
+    font-size: 12px;
+  }
+
+  @page {
+    margin: 20mm 15mm;
+    size: A4;
+  }
+}
