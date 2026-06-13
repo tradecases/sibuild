@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Copy, Edit, UserCheck, UserX, Shield } from 'lucide-react';
+import { Plus, Edit, UserCheck, UserX, Shield } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useUiStore } from '../../stores/uiStore';
 import { Tabs } from '../../components/ui/Tabs';
@@ -9,11 +9,11 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 import { Table } from '../../components/ui/Table';
-import { Badge, StatusBadge } from '../../components/ui/Badge';
+import { Badge } from '../../components/ui/Badge';
 import { Avatar } from '../../components/ui/Avatar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonTable } from '../../components/ui/Skeleton';
-import type { CompanySettings, Branch, Profile } from '../../types';
+import type { CompanySettings, Branch, Profile, Brand } from '../../types';
 
 interface CompanyForm extends Partial<CompanySettings> {
   name: string;
@@ -46,6 +46,12 @@ interface UserForm {
   is_active: boolean;
 }
 
+interface BrandForm {
+  name: string;
+  description: string;
+  is_active: boolean;
+}
+
 const ROLE_OPTIONS = [
   { value: 'super_admin', label: 'Super Admin - Full system access' },
   { value: 'manager', label: 'Manager - Operational management' },
@@ -64,6 +70,26 @@ const ROLE_LABELS: Record<string, string> = {
   delivery: 'Delivery',
 };
 
+const CURRENCY_OPTIONS = [
+  { value: 'BDT', label: 'BDT - Bangladeshi Taka' },
+  { value: 'AED', label: 'AED - UAE Dirham' },
+  { value: 'USD', label: 'USD - US Dollar' },
+  { value: 'EUR', label: 'EUR - Euro' },
+  { value: 'GBP', label: 'GBP - British Pound' },
+  { value: 'INR', label: 'INR - Indian Rupee' },
+  { value: 'SAR', label: 'SAR - Saudi Riyal' },
+];
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  BDT: '৳',
+  AED: 'AED',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  INR: '₹',
+  SAR: 'SAR',
+};
+
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState('company');
   const toast = useUiStore((state) => state.toast);
@@ -73,13 +99,13 @@ export function SettingsPage() {
     name: '',
     address: '',
     city: '',
-    country: 'UAE',
+    country: 'Bangladesh',
     phone: '',
     email: '',
     website: '',
     tax_number: '',
-    currency: 'AED',
-    currency_symbol: 'AED',
+    currency: 'BDT',
+    currency_symbol: '৳',
   });
   const [companyLoading, setCompanyLoading] = useState(false);
 
@@ -110,6 +136,16 @@ export function SettingsPage() {
   });
   const [savingUser, setSavingUser] = useState(false);
 
+  // Brands
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [showBrandModal, setShowBrandModal] = useState(false);
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [brandForm, setBrandForm] = useState<BrandForm>({
+    name: '',
+    description: '',
+    is_active: true,
+  });
+
   // Tax Settings
   const [taxRate, setTaxRate] = useState(5);
 
@@ -129,6 +165,8 @@ export function SettingsPage() {
       loadCompanySettings();
     } else if (activeTab === 'branches') {
       loadBranches();
+    } else if (activeTab === 'brands') {
+      loadBrands();
     } else if (activeTab === 'users') {
       loadUsers();
     } else if (activeTab === 'invoice') {
@@ -142,6 +180,7 @@ export function SettingsPage() {
       await Promise.all([
         loadCompanySettings(),
         loadBranches(),
+        loadBrands(),
         loadUsers(),
       ]);
     } catch (error) {
@@ -178,6 +217,20 @@ export function SettingsPage() {
     } catch (error) {
       console.error('Error loading branches:', error);
       toast.error('Error loading branches');
+    }
+  };
+
+  const loadBrands = async () => {
+    try {
+      const { data } = await supabase
+        .from('brands')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      setBrands(data || []);
+    } catch (error) {
+      console.error('Error loading brands:', error);
+      toast.error('Error loading brands');
     }
   };
 
@@ -309,6 +362,74 @@ export function SettingsPage() {
     }
   };
 
+  // Brand management functions
+  const resetBrandForm = () => {
+    setBrandForm({
+      name: '',
+      description: '',
+      is_active: true,
+    });
+    setEditingBrandId(null);
+  };
+
+  const handleEditBrand = (brand: Brand) => {
+    setBrandForm({
+      name: brand.name,
+      description: brand.description || '',
+      is_active: brand.is_active,
+    });
+    setEditingBrandId(brand.id);
+    setShowBrandModal(true);
+  };
+
+  const handleSaveBrand = async () => {
+    if (!brandForm.name) {
+      toast.warning('Please enter brand name');
+      return;
+    }
+
+    try {
+      if (editingBrandId) {
+        const { error } = await supabase
+          .from('brands')
+          .update(brandForm)
+          .eq('id', editingBrandId);
+        if (error) throw error;
+        toast.success('Brand updated successfully');
+      } else {
+        const { error } = await supabase
+          .from('brands')
+          .insert([brandForm]);
+        if (error) throw error;
+        toast.success('Brand created successfully');
+      }
+
+      setShowBrandModal(false);
+      resetBrandForm();
+      loadBrands();
+    } catch (error) {
+      console.error('Error saving brand:', error);
+      toast.error('Error saving brand');
+    }
+  };
+
+  const handleDeactivateBrand = async (brandId: string) => {
+    try {
+      const { error } = await supabase
+        .from('brands')
+        .update({ is_active: false })
+        .eq('id', brandId);
+
+      if (error) throw error;
+
+      toast.success('Brand deactivated');
+      loadBrands();
+    } catch (error) {
+      console.error('Error deactivating brand:', error);
+      toast.error('Error deactivating brand');
+    }
+  };
+
   // User management functions
   const resetUserForm = () => {
     setUserForm({
@@ -354,7 +475,6 @@ export function SettingsPage() {
     setSavingUser(true);
     try {
       if (editingUserId) {
-        // Update existing user profile
         const { error } = await supabase
           .from('profiles')
           .update({
@@ -368,7 +488,6 @@ export function SettingsPage() {
         if (error) throw error;
         toast.success('User updated successfully');
       } else {
-        // Create new user via Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userForm.email,
           password: userForm.password,
@@ -383,7 +502,6 @@ export function SettingsPage() {
         if (authError) throw authError;
 
         if (authData.user) {
-          // Update the profile created by trigger with additional fields
           await supabase
             .from('profiles')
             .update({
@@ -485,6 +603,7 @@ export function SettingsPage() {
         tabs={[
           { id: 'company', label: 'Company' },
           { id: 'branches', label: 'Branches' },
+          { id: 'brands', label: 'Brands' },
           { id: 'users', label: 'Users' },
           { id: 'tax', label: 'Tax Settings' },
           { id: 'invoice', label: 'Invoice Template' },
@@ -528,7 +647,7 @@ export function SettingsPage() {
                 label="Phone"
                 value={company.phone || ''}
                 onChange={(e) => setCompany({ ...company, phone: e.target.value })}
-                placeholder="+971 XX XXX XXXX"
+                placeholder="+880 XX XXX XXXX"
               />
               <Input
                 label="Email"
@@ -553,22 +672,19 @@ export function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <Select
                 label="Currency"
-                value={company.currency || 'AED'}
-                onChange={(e) => setCompany({ ...company, currency: e.target.value })}
-                options={[
-                  { value: 'AED', label: 'AED - UAE Dirham' },
-                  { value: 'USD', label: 'USD - US Dollar' },
-                  { value: 'EUR', label: 'EUR - Euro' },
-                  { value: 'GBP', label: 'GBP - British Pound' },
-                  { value: 'INR', label: 'INR - Indian Rupee' },
-                  { value: 'SAR', label: 'SAR - Saudi Riyal' },
-                ]}
+                value={company.currency || 'BDT'}
+                onChange={(e) => setCompany({
+                  ...company,
+                  currency: e.target.value,
+                  currency_symbol: CURRENCY_SYMBOLS[e.target.value] || e.target.value
+                })}
+                options={CURRENCY_OPTIONS}
               />
               <Input
                 label="Currency Symbol"
                 value={company.currency_symbol || ''}
                 onChange={(e) => setCompany({ ...company, currency_symbol: e.target.value })}
-                placeholder="AED"
+                placeholder="৳"
               />
             </div>
             <div className="pt-4 flex gap-3 justify-end border-t border-slate-200">
@@ -635,6 +751,66 @@ export function SettingsPage() {
               <EmptyState
                 title="No branches"
                 description="Add your first branch to get started"
+                size="sm"
+              />
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* BRANDS TAB */}
+      {activeTab === 'brands' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button leftIcon={<Plus size={16} />} onClick={() => { resetBrandForm(); setShowBrandModal(true); }}>
+              Add Brand
+            </Button>
+          </div>
+
+          <Card>
+            {loading ? (
+              <SkeletonTable rows={5} cols={4} />
+            ) : brands.length > 0 ? (
+              <Table
+                columns={[
+                  { key: 'name', label: 'Brand Name' },
+                  { key: 'description', label: 'Description', render: (v) => v || '-' },
+                  {
+                    key: 'is_active',
+                    label: 'Status',
+                    render: (v) => <Badge variant={v ? 'success' : 'danger'}>{v ? 'Active' : 'Inactive'}</Badge>,
+                  },
+                  {
+                    key: 'actions',
+                    label: 'Actions',
+                    render: (_, row) => (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleEditBrand(row)}
+                        >
+                          Edit
+                        </Button>
+                        {row.is_active && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleDeactivateBrand(row.id)}
+                          >
+                            Deactivate
+                          </Button>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+                data={brands}
+              />
+            ) : (
+              <EmptyState
+                title="No brands"
+                description="Add your first brand to categorize products"
                 size="sm"
               />
             )}
@@ -824,7 +1000,7 @@ export function SettingsPage() {
             type="tel"
             value={branchForm.phone}
             onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
-            placeholder="+971 XX XXX XXXX"
+            placeholder="+880 XX XXX XXXX"
           />
           <Input
             label="Email"
@@ -836,6 +1012,47 @@ export function SettingsPage() {
           <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
             <Button variant="secondary" onClick={() => { setShowBranchModal(false); resetBranchForm(); }}>Cancel</Button>
             <Button onClick={handleSaveBranch}>{editingBranchId ? 'Update' : 'Add'} Branch</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add/Edit Brand Modal */}
+      <Modal
+        isOpen={showBrandModal}
+        onClose={() => { setShowBrandModal(false); resetBrandForm(); }}
+        title={editingBrandId ? 'Edit Brand' : 'Add Brand'}
+        size="md"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Brand Name"
+            value={brandForm.name}
+            onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
+            placeholder="Brand name"
+          />
+          <Input
+            label="Description"
+            value={brandForm.description}
+            onChange={(e) => setBrandForm({ ...brandForm, description: e.target.value })}
+            placeholder="Brand description (optional)"
+            multiline
+            rows={3}
+          />
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="brand_is_active"
+              checked={brandForm.is_active}
+              onChange={(e) => setBrandForm({ ...brandForm, is_active: e.target.checked })}
+              className="rounded border-slate-300"
+            />
+            <label htmlFor="brand_is_active" className="text-sm text-slate-700">
+              Brand is active
+            </label>
+          </div>
+          <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+            <Button variant="secondary" onClick={() => { setShowBrandModal(false); resetBrandForm(); }}>Cancel</Button>
+            <Button onClick={handleSaveBrand}>{editingBrandId ? 'Update' : 'Add'} Brand</Button>
           </div>
         </div>
       </Modal>
