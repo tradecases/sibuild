@@ -34,7 +34,7 @@ interface ProjectWithDetails extends Project {
 export function ProjectDetail() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -80,7 +80,7 @@ export function ProjectDetail() {
       }
     } catch (error) {
       console.error('Error loading project:', error);
-      showToast('Error loading project', 'error');
+      toast.error('Error loading project');
     } finally {
       setLoading(false);
     }
@@ -129,7 +129,7 @@ export function ProjectDetail() {
       setQuotations(data || []);
     } catch (error) {
       console.error('Error loading quotations:', error);
-      showToast('Error loading quotations', 'error');
+      toast.error('Error loading quotations');
     }
   };
 
@@ -144,7 +144,7 @@ export function ProjectDetail() {
       setInvoices(data || []);
     } catch (error) {
       console.error('Error loading invoices:', error);
-      showToast('Error loading invoices', 'error');
+      toast.error('Error loading invoices');
     }
   };
 
@@ -168,7 +168,7 @@ export function ProjectDetail() {
       }
     } catch (error) {
       console.error('Error loading payments:', error);
-      showToast('Error loading payments', 'error');
+      toast.error('Error loading payments');
     }
   };
 

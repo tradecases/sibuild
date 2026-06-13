@@ -34,7 +34,7 @@ interface ProjectWithCustomer extends Project {
 
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   const [projects, setProjects] = useState<ProjectWithCustomer[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithCustomer[]>([]);
@@ -89,7 +89,7 @@ export function ProjectsPage() {
       setProjects(data || []);
     } catch (error) {
       console.error('Error loading projects:', error);
-      showToast('Error loading projects', 'error');
+      toast.error('Error loading projects');
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export function ProjectsPage() {
 
   const handleSave = async () => {
     if (!form.name || !form.customer_id) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -153,7 +153,7 @@ export function ProjectsPage() {
           .update(form)
           .eq('id', editingId);
         if (error) throw error;
-        showToast('Project updated successfully', 'success');
+        toast.success('Project updated successfully');
       } else {
         const { error } = await supabase
           .from('projects')
@@ -165,7 +165,7 @@ export function ProjectsPage() {
             },
           ]);
         if (error) throw error;
-        showToast('Project created successfully', 'success');
+        toast.success('Project created successfully');
       }
 
       setShowModal(false);
@@ -173,7 +173,7 @@ export function ProjectsPage() {
       loadProjects();
     } catch (error) {
       console.error('Error saving project:', error);
-      showToast('Error saving project', 'error');
+      toast.error('Error saving project');
     }
   };
 

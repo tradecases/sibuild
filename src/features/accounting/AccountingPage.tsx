@@ -45,7 +45,7 @@ interface ExpenseForm {
 
 export function AccountingPage() {
   const [activeTab, setActiveTab] = useState('overview');
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   // Overview
   const [kpis, setKpis] = useState<KPIStats>({
@@ -120,7 +120,7 @@ export function AccountingPage() {
       ]);
     } catch (error) {
       console.error('Error loading accounting data:', error);
-      showToast('Error loading data', 'error');
+      toast.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -235,7 +235,7 @@ export function AccountingPage() {
       setCashTransactions(data || []);
     } catch (error) {
       console.error('Error loading cash transactions:', error);
-      showToast('Error loading cash transactions', 'error');
+      toast.error('Error loading cash transactions');
     }
   };
 
@@ -257,7 +257,7 @@ export function AccountingPage() {
       setReceivablesTotal(total);
     } catch (error) {
       console.error('Error loading receivables:', error);
-      showToast('Error loading receivables', 'error');
+      toast.error('Error loading receivables');
     }
   };
 
@@ -273,7 +273,7 @@ export function AccountingPage() {
       setPayablesTotal(total);
     } catch (error) {
       console.error('Error loading payables:', error);
-      showToast('Error loading payables', 'error');
+      toast.error('Error loading payables');
     }
   };
 
@@ -286,7 +286,7 @@ export function AccountingPage() {
       setExpenses(data || []);
     } catch (error) {
       console.error('Error loading expenses:', error);
-      showToast('Error loading expenses', 'error');
+      toast.error('Error loading expenses');
     }
   };
 
@@ -313,13 +313,13 @@ export function AccountingPage() {
       setJournalEntries(data || []);
     } catch (error) {
       console.error('Error loading journal entries:', error);
-      showToast('Error loading journal entries', 'error');
+      toast.error('Error loading journal entries');
     }
   };
 
   const handleAddExpense = async () => {
     if (!expenseForm.description || !expenseForm.amount || !expenseForm.account_id) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -334,7 +334,7 @@ export function AccountingPage() {
 
       if (error) throw error;
 
-      showToast('Expense added successfully', 'success');
+      toast.success('Expense added successfully');
       setShowExpenseModal(false);
       setExpenseForm({
         description: '',
@@ -349,7 +349,7 @@ export function AccountingPage() {
       loadKPIs();
     } catch (error) {
       console.error('Error adding expense:', error);
-      showToast('Error adding expense', 'error');
+      toast.error('Error adding expense');
     }
   };
 

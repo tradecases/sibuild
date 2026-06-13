@@ -45,7 +45,7 @@ export function DeliveryPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   const [form, setForm] = useState<DeliveryForm>({
     invoice_id: '',
@@ -91,7 +91,7 @@ export function DeliveryPage() {
       setDeliveries(data || []);
     } catch (error) {
       console.error('Error loading deliveries:', error);
-      showToast('Error loading deliveries', 'error');
+      toast.error('Error loading deliveries');
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ export function DeliveryPage() {
 
   const handleSave = async () => {
     if (!form.customer_id || !form.scheduled_date || !form.delivery_address || !form.driver_name) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -168,7 +168,7 @@ export function DeliveryPage() {
           .update(form)
           .eq('id', editingId);
         if (error) throw error;
-        showToast('Delivery updated successfully', 'success');
+        toast.success('Delivery updated successfully');
       } else {
         const { error } = await supabase
           .from('delivery_orders')
@@ -181,7 +181,7 @@ export function DeliveryPage() {
             },
           ]);
         if (error) throw error;
-        showToast('Delivery created successfully', 'success');
+        toast.success('Delivery created successfully');
       }
 
       setShowModal(false);
@@ -189,7 +189,7 @@ export function DeliveryPage() {
       loadDeliveries();
     } catch (error) {
       console.error('Error saving delivery:', error);
-      showToast('Error saving delivery', 'error');
+      toast.error('Error saving delivery');
     }
   };
 
@@ -209,13 +209,13 @@ export function DeliveryPage() {
 
       if (error) throw error;
 
-      showToast('Status updated successfully', 'success');
+      toast.success('Status updated successfully');
       setShowStatusModal(false);
       setSelectedDelivery(null);
       loadDeliveries();
     } catch (error) {
       console.error('Error updating status:', error);
-      showToast('Error updating status', 'error');
+      toast.error('Error updating status');
     }
   };
 

@@ -46,7 +46,7 @@ interface UserForm {
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState('company');
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   // Company
   const [company, setCompany] = useState<CompanyForm>({
@@ -119,7 +119,7 @@ export function SettingsPage() {
       ]);
     } catch (error) {
       console.error('Error loading settings:', error);
-      showToast('Error loading settings', 'error');
+      toast.error('Error loading settings');
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,7 @@ export function SettingsPage() {
       setBranches(data || []);
     } catch (error) {
       console.error('Error loading branches:', error);
-      showToast('Error loading branches', 'error');
+      toast.error('Error loading branches');
     }
   };
 
@@ -164,7 +164,7 @@ export function SettingsPage() {
       setUsers(data || []);
     } catch (error) {
       console.error('Error loading users:', error);
-      showToast('Error loading users', 'error');
+      toast.error('Error loading users');
     }
   };
 
@@ -189,10 +189,10 @@ export function SettingsPage() {
 
       if (error) throw error;
 
-      showToast('Company settings saved successfully', 'success');
+      toast.success('Company settings saved successfully');
     } catch (error) {
       console.error('Error saving company settings:', error);
-      showToast('Error saving company settings', 'error');
+      toast.error('Error saving company settings');
     } finally {
       setCompanyLoading(false);
     }
@@ -200,7 +200,7 @@ export function SettingsPage() {
 
   const handleSaveBranch = async () => {
     if (!branchForm.name || !branchForm.code) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -211,13 +211,13 @@ export function SettingsPage() {
           .update(branchForm)
           .eq('id', editingBranchId);
         if (error) throw error;
-        showToast('Branch updated successfully', 'success');
+        toast.success('Branch updated successfully');
       } else {
         const { error } = await supabase
           .from('branches')
           .insert([branchForm]);
         if (error) throw error;
-        showToast('Branch created successfully', 'success');
+        toast.success('Branch created successfully');
       }
 
       setShowBranchModal(false);
@@ -225,7 +225,7 @@ export function SettingsPage() {
       loadBranches();
     } catch (error) {
       console.error('Error saving branch:', error);
-      showToast('Error saving branch', 'error');
+      toast.error('Error saving branch');
     }
   };
 
@@ -263,17 +263,17 @@ export function SettingsPage() {
 
       if (error) throw error;
 
-      showToast('Branch deactivated', 'success');
+      toast.success('Branch deactivated');
       loadBranches();
     } catch (error) {
       console.error('Error deactivating branch:', error);
-      showToast('Error deactivating branch', 'error');
+      toast.error('Error deactivating branch');
     }
   };
 
   const handleGenerateInvite = async () => {
     if (!inviteEmail) {
-      showToast('Please enter an email address', 'warning');
+      toast.warning('Please enter an email address');
       return;
     }
 
@@ -284,16 +284,16 @@ export function SettingsPage() {
 
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(inviteLink);
-    showToast('Invite link copied to clipboard', 'success');
+    toast.success('Invite link copied to clipboard');
   };
 
   const handleSaveInvoiceTemplate = async () => {
     try {
       // In a real app, would save to database
-      showToast('Invoice template saved successfully', 'success');
+      toast.success('Invoice template saved successfully');
     } catch (error) {
       console.error('Error saving invoice template:', error);
-      showToast('Error saving invoice template', 'error');
+      toast.error('Error saving invoice template');
     }
   };
 

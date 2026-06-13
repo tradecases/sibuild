@@ -38,7 +38,7 @@ interface ClaimForm {
 
 export function WarrantyPage() {
   const [activeTab, setActiveTab] = useState('registrations');
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   // Registrations
   const [warranties, setWarranties] = useState<WarrantyWithDetails[]>([]);
@@ -106,7 +106,7 @@ export function WarrantyPage() {
       ]);
     } catch (error) {
       console.error('Error loading initial data:', error);
-      showToast('Error loading data', 'error');
+      toast.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export function WarrantyPage() {
       setWarranties(enriched);
     } catch (error) {
       console.error('Error loading warranties:', error);
-      showToast('Error loading warranties', 'error');
+      toast.error('Error loading warranties');
     }
   };
 
@@ -153,7 +153,7 @@ export function WarrantyPage() {
       setClaims(data || []);
     } catch (error) {
       console.error('Error loading claims:', error);
-      showToast('Error loading claims', 'error');
+      toast.error('Error loading claims');
     }
   };
 
@@ -223,7 +223,7 @@ export function WarrantyPage() {
 
   const handleRegisterWarranty = async () => {
     if (!registrationForm.product_id || !registrationForm.customer_id || !registrationForm.purchase_date) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -241,7 +241,7 @@ export function WarrantyPage() {
 
       if (error) throw error;
 
-      showToast('Warranty registered successfully', 'success');
+      toast.success('Warranty registered successfully');
       setShowRegisterModal(false);
       setRegistrationForm({
         product_id: '',
@@ -254,13 +254,13 @@ export function WarrantyPage() {
       loadWarranties();
     } catch (error) {
       console.error('Error registering warranty:', error);
-      showToast('Error registering warranty', 'error');
+      toast.error('Error registering warranty');
     }
   };
 
   const handleAddClaim = async () => {
     if (!claimForm.warranty_id || !claimForm.issue_description) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -276,7 +276,7 @@ export function WarrantyPage() {
 
       if (error) throw error;
 
-      showToast('Claim created successfully', 'success');
+      toast.success('Claim created successfully');
       setShowClaimModal(false);
       setClaimForm({
         warranty_id: '',
@@ -286,7 +286,7 @@ export function WarrantyPage() {
       loadClaims();
     } catch (error) {
       console.error('Error creating claim:', error);
-      showToast('Error creating claim', 'error');
+      toast.error('Error creating claim');
     }
   };
 
@@ -306,13 +306,13 @@ export function WarrantyPage() {
 
       if (error) throw error;
 
-      showToast('Claim status updated', 'success');
+      toast.success('Claim status updated');
       setShowClaimStatusModal(false);
       setSelectedClaim(null);
       loadClaims();
     } catch (error) {
       console.error('Error updating claim:', error);
-      showToast('Error updating claim', 'error');
+      toast.error('Error updating claim');
     }
   };
 

@@ -53,7 +53,7 @@ interface SalaryRecord {
 
 export function EmployeesPage() {
   const [activeTab, setActiveTab] = useState('employees');
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   // Employees
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -117,7 +117,7 @@ export function EmployeesPage() {
       await loadBranches();
     } catch (error) {
       console.error('Error loading initial data:', error);
-      showToast('Error loading data', 'error');
+      toast.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export function EmployeesPage() {
       setEmployees(data || []);
     } catch (error) {
       console.error('Error loading employees:', error);
-      showToast('Error loading employees', 'error');
+      toast.error('Error loading employees');
     }
   };
 
@@ -179,7 +179,7 @@ export function EmployeesPage() {
       });
     } catch (error) {
       console.error('Error loading attendance:', error);
-      showToast('Error loading attendance', 'error');
+      toast.error('Error loading attendance');
     }
   };
 
@@ -202,7 +202,7 @@ export function EmployeesPage() {
       setSalaryRecords(mockRecords);
     } catch (error) {
       console.error('Error loading salary records:', error);
-      showToast('Error loading salary records', 'error');
+      toast.error('Error loading salary records');
     }
   };
 
@@ -222,7 +222,7 @@ export function EmployeesPage() {
 
   const handleSaveEmployee = async () => {
     if (!employeeForm.full_name || !employeeForm.designation || !employeeForm.join_date) {
-      showToast('Please fill all required fields', 'warning');
+      toast.warning('Please fill all required fields');
       return;
     }
 
@@ -238,13 +238,13 @@ export function EmployeesPage() {
           .update(data)
           .eq('id', editingId);
         if (error) throw error;
-        showToast('Employee updated successfully', 'success');
+        toast.success('Employee updated successfully');
       } else {
         const { error } = await supabase
           .from('employees')
           .insert([data]);
         if (error) throw error;
-        showToast('Employee created successfully', 'success');
+        toast.success('Employee created successfully');
       }
 
       setShowEmployeeModal(false);
@@ -252,7 +252,7 @@ export function EmployeesPage() {
       loadEmployees();
     } catch (error) {
       console.error('Error saving employee:', error);
-      showToast('Error saving employee', 'error');
+      toast.error('Error saving employee');
     }
   };
 
@@ -300,40 +300,40 @@ export function EmployeesPage() {
       const today = new Date().toISOString().split('T')[0];
 
       // In a real app, would insert/update attendance records
-      showToast('Attendance marked for today', 'success');
+      toast.success('Attendance marked for today');
       loadAttendance();
     } catch (error) {
       console.error('Error marking attendance:', error);
-      showToast('Error marking attendance', 'error');
+      toast.error('Error marking attendance');
     }
   };
 
   const handleGenerateSalary = async () => {
     if (!selectedEmployeeForSalary) {
-      showToast('Please select an employee', 'warning');
+      toast.warning('Please select an employee');
       return;
     }
 
     try {
       // In a real app, would create salary record
-      showToast('Salary generated successfully', 'success');
+      toast.success('Salary generated successfully');
       setShowGenerateSalaryModal(false);
       setSelectedEmployeeForSalary('');
       loadSalaryRecords();
     } catch (error) {
       console.error('Error generating salary:', error);
-      showToast('Error generating salary', 'error');
+      toast.error('Error generating salary');
     }
   };
 
   const handleMarkSalaryPaid = async (salaryId: string) => {
     try {
       // In a real app, would update salary record
-      showToast('Salary marked as paid', 'success');
+      toast.success('Salary marked as paid');
       loadSalaryRecords();
     } catch (error) {
       console.error('Error marking salary as paid:', error);
-      showToast('Error marking salary as paid', 'error');
+      toast.error('Error marking salary as paid');
     }
   };
 

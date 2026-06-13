@@ -58,7 +58,7 @@ interface ProfitData {
 
 export function ReportsPage() {
   const [activeTab, setActiveTab] = useState('sales');
-  const showToast = useUiStore((state) => state.showToast);
+  const toast = useUiStore((state) => state.toast);
 
   // Date filters
   const [dateFrom, setDateFrom] = useState(() => {
@@ -177,7 +177,7 @@ export function ReportsPage() {
       });
     } catch (error) {
       console.error('Error loading sales report:', error);
-      showToast('Error loading sales report', 'error');
+      toast.error('Error loading sales report');
     } finally {
       setLoading(false);
     }
@@ -214,7 +214,7 @@ export function ReportsPage() {
       setInventoryData(reports);
     } catch (error) {
       console.error('Error loading inventory report:', error);
-      showToast('Error loading inventory report', 'error');
+      toast.error('Error loading inventory report');
     } finally {
       setLoading(false);
     }
@@ -238,7 +238,7 @@ export function ReportsPage() {
       setCustomerData(reports);
     } catch (error) {
       console.error('Error loading customer report:', error);
-      showToast('Error loading customer report', 'error');
+      toast.error('Error loading customer report');
     } finally {
       setLoading(false);
     }
@@ -261,7 +261,7 @@ export function ReportsPage() {
       setSupplierData(reports);
     } catch (error) {
       console.error('Error loading supplier report:', error);
-      showToast('Error loading supplier report', 'error');
+      toast.error('Error loading supplier report');
     } finally {
       setLoading(false);
     }
@@ -329,7 +329,7 @@ export function ReportsPage() {
       });
     } catch (error) {
       console.error('Error loading profit report:', error);
-      showToast('Error loading profit report', 'error');
+      toast.error('Error loading profit report');
     } finally {
       setLoading(false);
     }
