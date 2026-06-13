@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Power, Copy } from 'lucide-react';
+import { Plus, Copy, Edit, UserCheck, UserX, Shield } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useUiStore } from '../../stores/uiStore';
 import { Tabs } from '../../components/ui/Tabs';
@@ -40,9 +40,29 @@ interface BranchForm {
 interface UserForm {
   full_name: string;
   email: string;
+  password: string;
   role: string;
+  branch_id: string;
   is_active: boolean;
 }
+
+const ROLE_OPTIONS = [
+  { value: 'super_admin', label: 'Super Admin - Full system access' },
+  { value: 'manager', label: 'Manager - Operational management' },
+  { value: 'sales', label: 'Sales Executive - Sales and quotations' },
+  { value: 'inventory', label: 'Inventory Manager - Inventory and warehouse' },
+  { value: 'accountant', label: 'Accountant - Financial management' },
+  { value: 'delivery', label: 'Delivery - Delivery operations' },
+];
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: 'Super Admin',
+  manager: 'Manager',
+  sales: 'Sales Executive',
+  inventory: 'Inventory Manager',
+  accountant: 'Accountant',
+  delivery: 'Delivery',
+};
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState('company');
@@ -59,7 +79,7 @@ export function SettingsPage() {
     website: '',
     tax_number: '',
     currency: 'AED',
-    currency_symbol: 'د.إ',
+    currency_symbol: 'AED',
   });
   const [companyLoading, setCompanyLoading] = useState(false);
 
@@ -79,9 +99,16 @@ export function SettingsPage() {
   // Users
   const [users, setUsers] = useState<Profile[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [showInviteLink, setShowInviteLink] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteLink, setInviteLink] = useState('');
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userForm, setUserForm] = useState<UserForm>({
+    full_name: '',
+    email: '',
+    password: '',
+    role: 'sales',
+    branch_id: '',
+    is_active: true,
+  });
+  const [savingUser, setSavingUser] = useState(false);
 
   // Tax Settings
   const [taxRate, setTaxRate] = useState(5);
@@ -170,9 +197,15 @@ export function SettingsPage() {
 
   const loadInvoiceTemplate = async () => {
     try {
-      // In a real app, would fetch from a settings table
-      setInvoiceNotes('Thank you for your business!');
-      setInvoiceTerms('Payment due within 30 days of invoice date.');
+      const { data } = await supabase
+        .from('company_settings')
+        .select('invoice_notes, invoice_terms')
+        .single();
+
+      if (data) {
+        setInvoiceNotes(data.invoice_notes || 'Thank you for your business!');
+        setInvoiceTerms(data.invoice_terms || 'Payment due within 30 days of invoice date.');
+      }
       setPaymentInstructions('Please transfer payment to our account or pay in cash.');
     } catch (error) {
       console.error('Error loading invoice template:', error);
@@ -182,10 +215,15 @@ export function SettingsPage() {
   const handleSaveCompany = async () => {
     setCompanyLoading(true);
     try {
+      const { data: existing } = await supabase
+        .from('company_settings')
+        .select('id')
+        .single();
+
       const { error } = await supabase
         .from('company_settings')
         .update(company)
-        .eq('id', company.id || (await supabase.from('company_settings').select('id').single()).data?.id);
+        .eq('id', company.id || existing?.id);
 
       if (error) throw error;
 
@@ -271,29 +309,165 @@ export function SettingsPage() {
     }
   };
 
-  const handleGenerateInvite = async () => {
-    if (!inviteEmail) {
-      toast.warning('Please enter an email address');
+  // User management functions
+  const resetUserForm = () => {
+    setUserForm({
+      full_name: '',
+      email: '',
+      password: '',
+      role: 'sales',
+      branch_id: '',
+      is_active: true,
+    });
+    setEditingUserId(null);
+  };
+
+  const handleEditUser = (user: Profile) => {
+    setUserForm({
+      full_name: user.full_name,
+      email: user.email,
+      password: '',
+      role: user.role,
+      branch_id: user.branch_id || '',
+      is_active: user.is_active,
+    });
+    setEditingUserId(user.id);
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = async () => {
+    if (!userForm.full_name || !userForm.email) {
+      toast.warning('Please fill all required fields');
       return;
     }
 
-    // In a real app, this would call a server function to generate an invite link
-    const mockLink = `${window.location.origin}/invite?token=${Math.random().toString(36).substring(7)}`;
-    setInviteLink(mockLink);
+    if (!editingUserId && !userForm.password) {
+      toast.warning('Please enter a password for new users');
+      return;
+    }
+
+    if (userForm.password && userForm.password.length < 6) {
+      toast.warning('Password must be at least 6 characters');
+      return;
+    }
+
+    setSavingUser(true);
+    try {
+      if (editingUserId) {
+        // Update existing user profile
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: userForm.full_name,
+            role: userForm.role,
+            branch_id: userForm.branch_id || null,
+            is_active: userForm.is_active,
+          })
+          .eq('id', editingUserId);
+
+        if (error) throw error;
+        toast.success('User updated successfully');
+      } else {
+        // Create new user via Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: userForm.email,
+          password: userForm.password,
+          options: {
+            data: {
+              full_name: userForm.full_name,
+              role: userForm.role,
+            },
+          },
+        });
+
+        if (authError) throw authError;
+
+        if (authData.user) {
+          // Update the profile created by trigger with additional fields
+          await supabase
+            .from('profiles')
+            .update({
+              branch_id: userForm.branch_id || null,
+              is_active: userForm.is_active,
+            })
+            .eq('id', authData.user.id);
+        }
+
+        toast.success('User created successfully');
+      }
+
+      setShowUserModal(false);
+      resetUserForm();
+      loadUsers();
+    } catch (error: any) {
+      console.error('Error saving user:', error);
+      if (error.message?.includes('already registered')) {
+        toast.error('Email already registered');
+      } else {
+        toast.error('Error saving user');
+      }
+    } finally {
+      setSavingUser(false);
+    }
   };
 
-  const handleCopyInviteLink = () => {
-    navigator.clipboard.writeText(inviteLink);
-    toast.success('Invite link copied to clipboard');
+  const handleToggleUserStatus = async (user: Profile) => {
+    try {
+      const newStatus = !user.is_active;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: newStatus })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success(newStatus ? 'User activated' : 'User deactivated');
+      loadUsers();
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast.error('Error updating user status');
+    }
   };
 
   const handleSaveInvoiceTemplate = async () => {
     try {
-      // In a real app, would save to database
+      const { data: existing } = await supabase
+        .from('company_settings')
+        .select('id')
+        .single();
+
+      const { error } = await supabase
+        .from('company_settings')
+        .update({
+          invoice_notes: invoiceNotes,
+          invoice_terms: invoiceTerms,
+        })
+        .eq('id', existing?.id);
+
+      if (error) throw error;
       toast.success('Invoice template saved successfully');
     } catch (error) {
       console.error('Error saving invoice template:', error);
       toast.error('Error saving invoice template');
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'super_admin':
+        return 'danger';
+      case 'manager':
+        return 'warning';
+      case 'sales':
+        return 'info';
+      case 'inventory':
+        return 'success';
+      case 'accountant':
+        return 'default';
+      case 'delivery':
+        return 'secondary';
+      default:
+        return 'default';
     }
   };
 
@@ -382,17 +556,19 @@ export function SettingsPage() {
                 value={company.currency || 'AED'}
                 onChange={(e) => setCompany({ ...company, currency: e.target.value })}
                 options={[
-                  { value: 'AED', label: 'AED - United Arab Emirates Dirham' },
+                  { value: 'AED', label: 'AED - UAE Dirham' },
                   { value: 'USD', label: 'USD - US Dollar' },
                   { value: 'EUR', label: 'EUR - Euro' },
                   { value: 'GBP', label: 'GBP - British Pound' },
+                  { value: 'INR', label: 'INR - Indian Rupee' },
+                  { value: 'SAR', label: 'SAR - Saudi Riyal' },
                 ]}
               />
               <Input
                 label="Currency Symbol"
                 value={company.currency_symbol || ''}
                 onChange={(e) => setCompany({ ...company, currency_symbol: e.target.value })}
-                placeholder="د.إ"
+                placeholder="AED"
               />
             </div>
             <div className="pt-4 flex gap-3 justify-end border-t border-slate-200">
@@ -469,19 +645,28 @@ export function SettingsPage() {
       {/* USERS TAB */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button leftIcon={<Plus size={16} />} onClick={() => setShowUserModal(true)}>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Shield size={16} />
+              <span>Manage user roles and access permissions</span>
+            </div>
+            <Button leftIcon={<Plus size={16} />} onClick={() => { resetUserForm(); setShowUserModal(true); }}>
               Add User
             </Button>
           </div>
 
+          {/* Role Legend */}
           <Card>
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> To add new users, invite them using the form below. They will receive an invitation link via email.
-              </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {Object.entries(ROLE_LABELS).map(([key, label]) => (
+                <div key={key} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50">
+                  <Badge variant={getRoleBadgeVariant(key)}>{label}</Badge>
+                </div>
+              ))}
             </div>
+          </Card>
 
+          <Card>
             {loading ? (
               <SkeletonTable rows={5} cols={5} />
             ) : users.length > 0 ? (
@@ -500,7 +685,11 @@ export function SettingsPage() {
                       </div>
                     ),
                   },
-                  { key: 'role', label: 'Role', render: (v) => <Badge>{v}</Badge> },
+                  {
+                    key: 'role',
+                    label: 'Role',
+                    render: (v) => <Badge variant={getRoleBadgeVariant(v)}>{ROLE_LABELS[v] || v}</Badge>
+                  },
                   {
                     key: 'is_active',
                     label: 'Status',
@@ -510,8 +699,25 @@ export function SettingsPage() {
                   {
                     key: 'actions',
                     label: 'Actions',
-                    render: () => (
-                      <Button size="sm" variant="secondary">Edit Role</Button>
+                    render: (_, row) => (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          leftIcon={<Edit size={14} />}
+                          onClick={() => handleEditUser(row)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={row.is_active ? 'secondary' : 'primary'}
+                          leftIcon={row.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
+                          onClick={() => handleToggleUserStatus(row)}
+                        >
+                          {row.is_active ? 'Disable' : 'Enable'}
+                        </Button>
+                      </div>
                     ),
                   },
                 ]}
@@ -634,56 +840,68 @@ export function SettingsPage() {
         </div>
       </Modal>
 
-      {/* Invite User Modal */}
+      {/* Add/Edit User Modal */}
       <Modal
         isOpen={showUserModal}
-        onClose={() => { setShowUserModal(false); setInviteEmail(''); setInviteLink(''); }}
-        title="Invite User"
+        onClose={() => { setShowUserModal(false); resetUserForm(); }}
+        title={editingUserId ? 'Edit User' : 'Add User'}
         size="md"
       >
         <div className="space-y-4">
-          {!inviteLink ? (
-            <>
-              <Input
-                label="Email Address"
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="user@example.com"
-              />
-              <p className="text-sm text-slate-600">
-                The user will receive an invitation email with a link to set up their account.
-              </p>
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
-                <Button variant="secondary" onClick={() => setShowUserModal(false)}>Cancel</Button>
-                <Button onClick={handleGenerateInvite}>Generate Invite Link</Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">Invitation link generated! Copy and share with the user.</p>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <Input
-                  value={inviteLink}
-                  readOnly
-                  className="flex-1"
-                />
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  leftIcon={<Copy size={14} />}
-                  onClick={handleCopyInviteLink}
-                >
-                  Copy
-                </Button>
-              </div>
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
-                <Button variant="secondary" onClick={() => { setShowUserModal(false); setInviteEmail(''); setInviteLink(''); }}>Done</Button>
-              </div>
-            </>
+          <Input
+            label="Full Name"
+            value={userForm.full_name}
+            onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+            placeholder="User's full name"
+          />
+          <Input
+            label="Email Address"
+            type="email"
+            value={userForm.email}
+            onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+            placeholder="user@example.com"
+            disabled={!!editingUserId}
+          />
+          {!editingUserId && (
+            <Input
+              label="Password"
+              type="password"
+              value={userForm.password}
+              onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+              placeholder="Minimum 6 characters"
+            />
           )}
+          <Select
+            label="Role"
+            value={userForm.role}
+            onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+            options={ROLE_OPTIONS}
+          />
+          <Select
+            label="Branch"
+            value={userForm.branch_id}
+            onChange={(e) => setUserForm({ ...userForm, branch_id: e.target.value })}
+            options={[
+              { value: '', label: 'No specific branch' },
+              ...branches.filter(b => b.is_active).map(b => ({ value: b.id, label: b.name })),
+            ]}
+          />
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_active"
+              checked={userForm.is_active}
+              onChange={(e) => setUserForm({ ...userForm, is_active: e.target.checked })}
+              className="rounded border-slate-300"
+            />
+            <label htmlFor="is_active" className="text-sm text-slate-700">
+              User is active (can log in)
+            </label>
+          </div>
+          <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+            <Button variant="secondary" onClick={() => { setShowUserModal(false); resetUserForm(); }}>Cancel</Button>
+            <Button onClick={handleSaveUser} loading={savingUser}>{editingUserId ? 'Update' : 'Add'} User</Button>
+          </div>
         </div>
       </Modal>
     </div>
