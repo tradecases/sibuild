@@ -347,9 +347,6 @@ export function PurchaseOrderForm() {
     try {
       setSaving(true);
 
-      // Create goods receipt
-      const { count } = await supabase.from('stock_movements').select('*', { count: 'exact', head: true });
-
       // Create stock movements for each item
       const movements = items.map((item) => ({
         product_id: item.product_id,
@@ -366,6 +363,43 @@ export function PurchaseOrderForm() {
       const { error: movementError } = await supabase.from('stock_movements').insert(movements);
       if (movementError) throw movementError;
 
+      // Update received_quantity for each item
+      for (const item of items) {
+        await supabase
+          .from('purchase_order_items')
+          .update({ received_quantity: item.quantity })
+          .eq('id', item.id);
+      }
+
+      // Update stock levels for each product
+      for (const item of items) {
+        // Check if stock level exists
+        const { data: existingLevel } = await supabase
+          .from('stock_levels')
+          .select('id, quantity')
+          .eq('product_id', item.product_id)
+          .eq('warehouse_id', form.warehouse_id)
+          .is('variant_id', item.variant_id || null)
+          .maybeSingle();
+
+        if (existingLevel) {
+          await supabase
+            .from('stock_levels')
+            .update({ quantity: existingLevel.quantity + item.quantity })
+            .eq('id', existingLevel.id);
+        } else {
+          await supabase
+            .from('stock_levels')
+            .insert([{
+              product_id: item.product_id,
+              variant_id: item.variant_id,
+              warehouse_id: form.warehouse_id,
+              quantity: item.quantity,
+              reserved_quantity: 0,
+            }]);
+        }
+      }
+
       // Update PO status
       const { error: updateError } = await supabase
         .from('purchase_orders')
@@ -376,6 +410,32 @@ export function PurchaseOrderForm() {
         .eq('id', purchaseOrder.id);
 
       if (updateError) throw updateError;
+
+      // Update supplier outstanding balance
+      const { error: balanceError } = await supabase.rpc('update_supplier_balance', {
+        p_supplier_id: form.supplier_id,
+        p_amount: purchaseOrder.total_amount,
+      });
+
+      // If RPC fails, update directly
+      if (balanceError) {
+        console.warn('RPC failed, falling back to direct update:', balanceError);
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('outstanding_balance, total_purchases')
+          .eq('id', form.supplier_id)
+          .single();
+
+        if (supplier) {
+          await supabase
+            .from('suppliers')
+            .update({
+              outstanding_balance: (supplier.outstanding_balance || 0) + purchaseOrder.total_amount,
+              total_purchases: (supplier.total_purchases || 0) + purchaseOrder.total_amount,
+            })
+            .eq('id', form.supplier_id);
+        }
+      }
 
       toast({ message: 'Goods received and stock updated', type: 'success' });
       setShowGoodsReceiptModal(false);
