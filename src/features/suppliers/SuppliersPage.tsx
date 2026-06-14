@@ -120,13 +120,22 @@ export function SuppliersPage() {
                   render: (v) => <span className={v ? 'text-green-600 font-semibold' : 'text-gray-500'}>{v ? 'Active' : 'Inactive'}</span>,
                 },
                 {
+                  key: 'discount_percentage',
+                  label: 'Discount',
+                  width: '8%',
+                  render: (v) => <span className="text-sm font-medium">{v ? `${v}%` : '-'}</span>,
+                },
+                {
                   key: 'actions',
                   label: 'Actions',
-                  width: '15%',
+                  width: '18%',
                   render: (_, supplier: any) => (
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" onClick={() => navigate(`/suppliers/${supplier.id}`)}>
                         View
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
+                        Edit
                       </Button>
                       <Button
                         size="sm"

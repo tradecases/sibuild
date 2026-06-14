@@ -36,6 +36,7 @@ export function SupplierDetail() {
     country: '',
     payment_terms: 0,
     credit_limit: 0,
+    discount_percentage: 0,
     notes: '',
   });
 
@@ -241,6 +242,18 @@ export function SupplierDetail() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Discount Percentage (%)</label>
+              <Input
+                type="number"
+                value={formData.discount_percentage || 0}
+                onChange={e => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) || 0 })}
+                min={0}
+                max={100}
+                step="0.1"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-900 mb-1">Address</label>
               <Input
                 value={formData.address || ''}
@@ -343,6 +356,10 @@ export function SupplierDetail() {
                 <div>
                   <p className="text-sm text-gray-600">Credit Limit</p>
                   <p className="font-semibold text-gray-900">{formatCurrency(supplier.credit_limit)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Discount</p>
+                  <p className="font-semibold text-gray-900">{supplier.discount_percentage || 0}%</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Outstanding Balance</p>

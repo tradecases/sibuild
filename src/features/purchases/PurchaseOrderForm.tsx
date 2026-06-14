@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUiStore } from '../../stores/uiStore';
@@ -214,8 +214,19 @@ export function PurchaseOrderForm() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  // Calculate totals
-  const totals = calcDocTotals(items);
+  // Calculate totals with supplier discount
+  const selectedSupplier = suppliers.find(s => s.id === form.supplier_id);
+  const supplierDiscountPct = selectedSupplier?.discount_percentage || 0;
+
+  const totals = React.useMemo(() => {
+    const baseTotals = calcDocTotals(items);
+    const supplierDiscount = baseTotals.subtotal * (supplierDiscountPct / 100);
+    return {
+      ...baseTotals,
+      discount_amount: baseTotals.discount_amount + supplierDiscount,
+      total_amount: baseTotals.subtotal - baseTotals.discount_amount - supplierDiscount + baseTotals.tax_amount,
+    };
+  }, [items, supplierDiscountPct]);
 
   // Save PO
   const handleSave = async (newStatus: string = 'draft') => {
@@ -598,9 +609,11 @@ export function PurchaseOrderForm() {
               <p className="text-sm text-gray-600">Subtotal</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.subtotal)}</p>
             </div>
-            {totals.discount_amount > 0 && (
+            {(supplierDiscountPct > 0 || totals.discount_amount > 0) && (
               <div>
-                <p className="text-sm text-gray-600">Total Discount</p>
+                <p className="text-sm text-gray-600">
+                  Discount {supplierDiscountPct > 0 && <span className="text-primary-600">({supplierDiscountPct}% supplier)</span>}
+                </p>
                 <p className="text-2xl font-bold text-orange-600">-{formatCurrency(totals.discount_amount)}</p>
               </div>
             )}

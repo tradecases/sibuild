@@ -21,6 +21,7 @@ const InvoicesPage = React.lazy(() => import('./features/sales/InvoicesPage').th
 const InvoiceDetail = React.lazy(() => import('./features/sales/InvoiceDetail').then(m => ({ default: m.InvoiceDetail })));
 const SuppliersPage = React.lazy(() => import('./features/suppliers/SuppliersPage').then(m => ({ default: m.SuppliersPage })));
 const SupplierDetail = React.lazy(() => import('./features/suppliers/SupplierDetail').then(m => ({ default: m.SupplierDetail })));
+const SupplierForm = React.lazy(() => import('./features/suppliers/SupplierForm').then(m => ({ default: m.SupplierForm })));
 const PurchasesPage = React.lazy(() => import('./features/purchases/PurchasesPage').then(m => ({ default: m.PurchasesPage })));
 const PurchaseOrderForm = React.lazy(() => import('./features/purchases/PurchaseOrderForm').then(m => ({ default: m.PurchaseOrderForm })));
 const ProjectsPage = React.lazy(() => import('./features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
@@ -147,9 +148,19 @@ export default function App() {
               <SuppliersPage />
             </Suspense>
           } />
+          <Route path="suppliers/new" element={
+            <Suspense fallback={<PageLoader />}>
+              <SupplierForm />
+            </Suspense>
+          } />
           <Route path="suppliers/:id" element={
             <Suspense fallback={<PageLoader />}>
               <SupplierDetail />
+            </Suspense>
+          } />
+          <Route path="suppliers/:id/edit" element={
+            <Suspense fallback={<PageLoader />}>
+              <SupplierForm />
             </Suspense>
           } />
 

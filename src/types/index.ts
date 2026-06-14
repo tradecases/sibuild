@@ -180,6 +180,9 @@ export interface Supplier {
   payment_terms: number;
   credit_limit: number;
   outstanding_balance: number;
+  total_purchases: number;
+  total_payments: number;
+  discount_percentage: number;
   notes: string | null;
   is_active: boolean;
   created_at: string;
