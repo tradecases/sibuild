@@ -2,8 +2,10 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
-export function formatCurrency(amount: number, currency = 'AED'): string {
-  return `${currency} ${amount.toLocaleString('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export function formatCurrency(amount: number, currency?: string, symbol?: string): string {
+  const curr = currency || 'BDT';
+  const sym = symbol || '৳';
+  return `${sym}${amount.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function formatNumber(num: number): string {
