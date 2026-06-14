@@ -62,12 +62,17 @@ export function SuppliersPage() {
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase.from('suppliers').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('foreign key constraint') || error.code === '23503') {
+          throw new Error('Cannot delete supplier with existing purchase orders. Please delete or reassign the purchase orders first.');
+        }
+        throw error;
+      }
       setSuppliers(suppliers.filter(s => s.id !== id));
       toast({ message: 'Supplier deleted', type: 'success' });
     } catch (err) {
       console.error('Error deleting supplier:', err);
-      toast({ message: 'Failed to delete supplier', type: 'error' });
+      toast({ message: err instanceof Error ? err.message : 'Failed to delete supplier', type: 'error' });
     } finally {
       setDeleteConfirm(null);
     }
